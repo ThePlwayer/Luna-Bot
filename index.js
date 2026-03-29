@@ -112,7 +112,7 @@ function trimHistoryForGroq(history, maxTokens = 2800) {
   if (!history.length) return [];
 
   const stripped = history.map((h, i) => {
-    if (i === history.length - 1) return h;
+    if (i === history.length - 1) return { role: h.role, content: h.content };
     const content = h.content.replace(/\[profile:[^\]]{1,600}\]/g, "").replace(/\s{2,}/g, " ").trim();
     return { role: h.role, content };
   });

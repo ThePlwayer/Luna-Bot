@@ -342,18 +342,131 @@ client.once(Events.ClientReady, async (readyClient) => {
     status: "online",
   });
 
-  const statuses = [
-    "watching server chaos 👀",
-    "protecting my master 💖",
-    "listening to chat 🐾",
-    "thinking about fish 🐟",
-    "looking for fun 😸",
-  ];
-  setInterval(() => {
-    const random = statuses[Math.floor(Math.random() * statuses.length)];
-    client.user.setActivity(random);
-  }, 300_000);
+  const ACTIVE_STATUSES = [
+  "watching server chaos 👀",
+  "protecting my master 💖",
+  "listening to chat 🐾",
+  "thinking about fish 🐟",
+  "looking for fun 😸",
+];
+
+const IDLE_STATUSES = [
+  "zoning out... 🐱",
+  "staring at nothing 👀",
+  "waiting for someone to talk to~ 🌸",
+];
+
+const SLEEPY_STATUSES = [
+  "taking a nap 😴",
+  "zzz... 💤",
+  "dreaming of fish 🐟💤",
+];
+
+setInterval(() => {
+  const mostRecent = lastLunaSentTime.size > 0
+    ? Math.max(...lastLunaSentTime.values())
+    : 0;
+  const idleMs = Date.now() - mostRecent;
+
+  if (idleMs > 30 * 60_000) {
+    const pick = SLEEPY_STATUSES[Math.floor(Math.random() * SLEEPY_STATUSES.length)];
+    client.user.setPresence({ activities: [{ name: pick }], status: "idle" });
+  } else if (idleMs > 10 * 60_000) {
+    const pick = IDLE_STATUSES[Math.floor(Math.random() * IDLE_STATUSES.length)];
+    client.user.setPresence({ activities: [{ name: pick }], status: "idle" });
+  } else {
+    const pick = ACTIVE_STATUSES[Math.floor(Math.random() * ACTIVE_STATUSES.length)];
+    client.user.setPresence({ activities: [{ name: pick }], status: "online" });
+  }
+}, 60_000);
 });
+/* ───────── UNPROMPTED "MISSING YOU" MESSAGES ───────── */
+const lastUnprompted = new Map(); // channelId -> timestamp
+const UNPROMPTED_SILENCE_MS  = 45 * 60_000;  // 45 mins of silence
+const UNPROMPTED_COOLDOWN_MS = 60 * 60_000;  // max once per hour per channel
+const UNPROMPTED_GLOBAL_COOLDOWN_MS = 60 * 60_000; // max once per hour globally
+let lastUnpromptedGlobal = 0;
+
+setInterval(async () => {
+  if (Date.now() - lastUnpromptedGlobal < UNPROMPTED_GLOBAL_COOLDOWN_MS) return;
+
+  for (const [channelId, lastSent] of lastLunaSentTime) {
+    const silenceMs = Date.now() - lastSent;
+    if (silenceMs < UNPROMPTED_SILENCE_MS) continue;
+
+    const lastFired = lastUnprompted.get(channelId) ?? 0;
+    if (Date.now() - lastFired < UNPROMPTED_COOLDOWN_MS) continue;
+
+    // Get recent history to find who was talking and their trust level
+    const history = getHistory(channelId);
+    if (history.length < 2) continue;
+
+    // Find the highest trust level of recent users from history
+    let highestTrust = "shy";
+    let highestTrustUserId = null;
+    const TRUST_ORDER = ["shy", "warming_up", "friendly", "close", "bonded"];
+
+    for (const [userId, profile] of userProfiles) {
+      const trust = getTrustLevel(profile);
+      if (TRUST_ORDER.indexOf(trust) > TRUST_ORDER.indexOf(highestTrust)) {
+        highestTrust = trust;
+        highestTrustUserId = userId;
+      }
+    }
+
+    // Only fire for friendly+ in servers, close+ in DMs
+    const channel = await client.channels.fetch(channelId).catch(() => null);
+    if (!channel) continue;
+    const isDM = !channel.guild;
+    if (isDM && !["close", "bonded"].includes(highestTrust)) continue;
+    if (!isDM && !["friendly", "close", "bonded"].includes(highestTrust)) continue;
+    if (!isDM && isMuted(channelId)) continue;
+
+    // Check channel is still allowed
+    if (!isDM) {
+      const allowedSet = allowedChannels.get(channel.guild?.id ?? "");
+      if (!allowedSet || !allowedSet.has(channelId)) continue;
+    }
+
+    // Build a short unprompted message via Groq
+    const recentConvo = history.slice(-6).map(h => h.content).join("\n");
+    const trustDesc = highestTrust === "bonded" ? "your closest bond, very personal and warm" :
+                      highestTrust === "close"   ? "a close friend, affectionate" :
+                                                   "a friendly acquaintance, casual";
+
+    try {
+      const res = await groqChat([
+        {
+          role: "system",
+          content:
+            "You are Luna, a cute cat girl. The chat has gone quiet for a while. " +
+            `Your relationship with the most recent person is: ${trustDesc}. ` +
+            "Send ONE short, natural unprompted message (1-2 sentences max) that feels like you genuinely miss the vibe or the person. " +
+            "Be subtle and emotional — don't say 'i noticed it got quiet'. Just express your feeling naturally. " +
+            "Use cat-girl expressions. End with one emoji.",
+        },
+        {
+          role: "user",
+          content: `Recent conversation context:\n${recentConvo}\n\nSend your unprompted message:`,
+        },
+      ], 80);
+
+      const msg = res.choices[0]?.message?.content?.trim();
+      if (!msg) continue;
+
+      await channel.send({ content: msg, allowedMentions: { parse: ["users"] } });
+      lastUnprompted.set(channelId, Date.now());
+      lastUnpromptedGlobal = Date.now();
+      lastLunaSentTime.set(channelId, Date.now());
+      addToHistory(channelId, "assistant", msg);
+      console.log(`[unprompted] Sent message to ${channelId}: ${msg.slice(0, 60)}`);
+
+      break; // only one channel per interval tick
+    } catch (err) {
+      console.warn("[unprompted] Failed:", err.message);
+    }
+  }
+}, 5 * 60_000); // check every 5 minutes
 
 /* ── Keep member cache up to date ── */
 client.on(Events.GuildMemberAdd, (member) => {

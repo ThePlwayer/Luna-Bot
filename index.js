@@ -521,7 +521,7 @@ async function runLunaReply(message, ctx) {
       { role: "system", content: systemPrompt },
       ...trimmedHistory,
       { role: "user", content: fullHistoryLine },
-    ], 180, signal);
+    ], 280, signal);
 
     clearInterval(typingInterval);
     typingInterval = null;
@@ -542,16 +542,13 @@ async function runLunaReply(message, ctx) {
       .map((b) => b.trim())
       .filter(Boolean);
 
-    if (bubbles.length === 1 && bubbles[0].length > 180) {
+    if (bubbles.length === 1 && bubbles[0].length > 80) {
   const sentences = bubbles[0]
     .split(/(?<=[.!?~])\s+/)
     .map((s) => s.trim())
     .filter(Boolean);
   if (sentences.length > 1) bubbles = sentences;
-}
-if (bubbles.length > 3) {
-  bubbles = [bubbles.join(" ")];
-}
+    }
 
     // Emoji guarantee — append to every bubble that doesn't already end with one
     const LUNA_EMOJIS = ["🐾", "💕", "😺", "✨", "🥺", "😊", "💖", "🌸", "😽", "🐱"];
@@ -603,7 +600,7 @@ if (bubbles.length > 3) {
       }
     }
 
-    if (Math.random() < 0.8) {
+    if (Math.random() < 0.25) {
       const emojis = ["💖", "✨", "😂", "👀", "😭", "🔥"];
       message.react(emojis[Math.floor(Math.random() * emojis.length)]).catch(() => {});
     }

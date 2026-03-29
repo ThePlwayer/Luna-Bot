@@ -542,13 +542,16 @@ async function runLunaReply(message, ctx) {
       .map((b) => b.trim())
       .filter(Boolean);
 
-    if (bubbles.length === 1 && bubbles[0].length > 80) {
-      const sentences = bubbles[0]
-        .split(/(?<=[.!?~])\s+/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (sentences.length > 1) bubbles = sentences;
-    }
+    if (bubbles.length === 1 && bubbles[0].length > 180) {
+  const sentences = bubbles[0]
+    .split(/(?<=[.!?~])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (sentences.length > 1) bubbles = sentences;
+}
+if (bubbles.length > 3) {
+  bubbles = [bubbles.join(" ")];
+}
 
     // Emoji guarantee — append to every bubble that doesn't already end with one
     const LUNA_EMOJIS = ["🐾", "💕", "😺", "✨", "🥺", "😊", "💖", "🌸", "😽", "🐱"];

@@ -521,7 +521,7 @@ async function runLunaReply(message, ctx) {
       { role: "system", content: systemPrompt },
       ...trimmedHistory,
       { role: "user", content: fullHistoryLine },
-    ], 280, signal);
+    ], 180, signal);
 
     clearInterval(typingInterval);
     typingInterval = null;

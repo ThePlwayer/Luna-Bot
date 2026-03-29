@@ -368,7 +368,9 @@ setInterval(() => {
     : 0;
   const idleMs = Date.now() - mostRecent;
 
-  if (idleMs > 30 * 60_000) {
+  if (idleMs > 45 * 60_000) {
+    client.user.setPresence({ activities: [], status: "invisible" });
+  } else if (idleMs > 30 * 60_000) {
     const pick = SLEEPY_STATUSES[Math.floor(Math.random() * SLEEPY_STATUSES.length)];
     client.user.setPresence({ activities: [{ name: pick }], status: "idle" });
   } else if (idleMs > 10 * 60_000) {

@@ -603,7 +603,7 @@ if (bubbles.length > 3) {
       }
     }
 
-    if (Math.random() < 0.25) {
+    if (Math.random() < 0.8) {
       const emojis = ["💖", "✨", "😂", "👀", "😭", "🔥"];
       message.react(emojis[Math.floor(Math.random() * emojis.length)]).catch(() => {});
     }

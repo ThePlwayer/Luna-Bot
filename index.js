@@ -710,10 +710,6 @@ async function runLunaReply(message, ctx) {
       if (i === 0) {
         await message.reply({ content: bubble, allowedMentions: { parse: ["users", "everyone"] } });
         lastLunaSentTime.set(message.channelId, Date.now());
-        client.user.setPresence({
-  activities: [{ name: ACTIVE_STATUSES[Math.floor(Math.random() * ACTIVE_STATUSES.length)] }],
-  status: "online",
-});
       } else {
         await message.channel.send({ content: bubble, allowedMentions: { parse: ["users", "everyone"] } });
       }

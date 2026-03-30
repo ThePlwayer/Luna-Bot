@@ -657,7 +657,7 @@ async function runLunaReply(message, ctx) {
       .map((b) => b.trim())
       .filter(Boolean);
 
-    if (bubbles.length === 1 && bubbles[0].length > 80) {
+    if (bubbles.length === 1 && bubbles[0].length > 300) {
   const sentences = bubbles[0]
     .split(/(?<=[.!?~])\s+/)
     .map((s) => s.trim())

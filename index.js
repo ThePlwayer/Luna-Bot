@@ -694,6 +694,7 @@ async function runLunaReply(message, ctx) {
     }
 
     // Light emoji handling - only add one emoji at the very end sometimes
+    // Light emoji handling - only add one emoji at the very end sometimes
     const LUNA_EMOJIS = ["🐾", "💕", "😺", "🥺", "💖", "🌸", "🐱"];
     const endsWithEmoji = (s) => {
       const lastChar = [...s.trimEnd()].at(-1) ?? "";
@@ -708,7 +709,7 @@ async function runLunaReply(message, ctx) {
       if (!endsWithEmoji(lastBubble) && Math.random() < 0.55) {
         bubbles[lastIndex] = lastBubble + " " + LUNA_EMOJIS[Math.floor(Math.random() * LUNA_EMOJIS.length)];
       }
-}
+    }
 
     // Guard: if aborted after Groq responded but before sending, bail out entirely
     if (signal.aborted) return;

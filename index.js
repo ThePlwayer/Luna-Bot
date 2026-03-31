@@ -693,17 +693,22 @@ async function runLunaReply(message, ctx) {
   if (sentences.length > 1) bubbles = sentences;
     }
 
-    // Emoji guarantee — append to every bubble that doesn't already end with one
-    const LUNA_EMOJIS = ["🐾", "💕", "😺", "✨", "🥺", "😊", "💖", "🌸", "😽", "🐱"];
+    // Light emoji handling - only add one emoji at the very end sometimes
+    const LUNA_EMOJIS = ["🐾", "💕", "😺", "🥺", "💖", "🌸", "🐱"];
     const endsWithEmoji = (s) => {
       const lastChar = [...s.trimEnd()].at(-1) ?? "";
       const cp = lastChar.codePointAt(0) ?? 0;
-      return cp >= 0x2600; // covers ✨ (0x2728), ❤️ (0x2764), and all 0x1Fxxx emoji
+      return cp >= 0x2600;
     };
-    bubbles = bubbles.map((b) => {
-      if (endsWithEmoji(b)) return b;
-      return b.trimEnd() + " " + LUNA_EMOJIS[Math.floor(Math.random() * LUNA_EMOJIS.length)];
-    });
+
+    // Only add to the LAST bubble, and only \~55% of the time
+    if (bubbles.length > 0) {
+      const lastIndex = bubbles.length - 1;
+      const lastBubble = bubbles[lastIndex].trimEnd();
+      if (!endsWithEmoji(lastBubble) && Math.random() < 0.55) {
+        bubbles[lastIndex] = lastBubble + " " + LUNA_EMOJIS[Math.floor(Math.random() * LUNA_EMOJIS.length)];
+      }
+}
 
     // Guard: if aborted after Groq responded but before sending, bail out entirely
     if (signal.aborted) return;

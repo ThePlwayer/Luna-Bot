@@ -694,7 +694,6 @@ async function runLunaReply(message, ctx) {
     }
 
     // Light emoji handling - only add one emoji at the very end sometimes
-    // Light emoji handling - only add one emoji at the very end sometimes
     const LUNA_EMOJIS = ["🐾", "💕", "😺", "🥺", "💖", "🌸", "🐱"];
     const endsWithEmoji = (s) => {
       const lastChar = [...s.trimEnd()].at(-1) ?? "";

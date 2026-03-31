@@ -95,6 +95,34 @@ async function groqChat(messages, maxTokens = 280, signal = undefined) {
   }
 }
 
+async function detectIndirectCommandAI(text, groqClient) {
+  try {
+    const res = await groqClient.chat.completions.create({
+      model: GROQ_FALLBACK,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a classifier. Determine if the message is DIRECTLY telling a bot to stop talking or start talking again. " +
+            "Only return 'mute', 'unmute', or 'none'. " +
+            "Examples of mute: 'shut up', 'stop talking', 'be quiet', 'stfu'. " +
+            "Examples of unmute: 'you can talk now', 'start talking again', 'come back'. " +
+            "Examples of none: 'let's talk about fish', 'i love you', 'do you know grok?'. " +
+            "Return ONLY one word: mute, unmute, or none.",
+        },
+        { role: "user", content: text },
+      ],
+      max_tokens: 5,
+      temperature: 0,
+    });
+    const result = res.choices[0]?.message?.content?.trim().toLowerCase();
+    if (result === "mute" || result === "unmute") return result;
+    return null;
+  } catch {
+    return detectIndirectCommand(text); // fallback to regex if AI fails
+  }
+}
+
 /* ───────── TOKEN HELPERS ───────── */
 
 /** Rough token estimate: ~3.5 chars per token */
@@ -831,7 +859,7 @@ client.on(Events.MessageCreate, async (message) => {
   const content    = message.content.replace(`<@${client.user.id}>`, "").trim() || "Hello!";
 
   if (!isBot && (addressTag === "DIRECT" || addressTag === "MENTION")) {
-    const indirectCmd = detectIndirectCommand(content);
+    const indirectCmd = await detectIndirectCommandAI(content, groq);
     if (indirectCmd === "mute") {
       muteChannel(message.channelId);
       await message.reply("ok ok, i'll be quiet~ 🤫");

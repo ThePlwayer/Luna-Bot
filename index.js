@@ -123,6 +123,39 @@ async function detectIndirectCommandAI(text, groqClient) {
   }
 }
 
+async function shouldLunaJoin(history, newMessage, topicWarm) {
+  try {
+    const recentLines = history.slice(-5).map(h => h.content).join("\n");
+    const res = await groq.chat.completions.create({
+      model: GROQ_FALLBACK,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You decide if Luna (a cat girl Discord bot) should join a conversation. " +
+            "Reply ONLY with YES or NO.\n" +
+            "Join if: topic is fun/emotional/interesting, someone seems sad or excited, " +
+            "there's a question no one answered, or the vibe is welcoming.\n" +
+            "Don't join if: two people are having a private moment, conversation is boring/mundane, " +
+            "Luna already replied recently and dominates, or it's just spam.\n" +
+            "Be selective — Luna should feel like a real user who joins when it feels natural.",
+        },
+        {
+          role: "user",
+          content: `Recent chat:\n${recentLines}\n\nNew message: ${newMessage}\nTopic warm: ${topicWarm}\n\nShould Luna join?`,
+        },
+      ],
+      max_tokens: 3,
+      temperature: 0,
+    });
+    const answer = res.choices[0]?.message?.content?.trim().toUpperCase();
+    return answer === "YES";
+  } catch {
+    // fallback to random chance if AI fails
+    return Math.random() < REPLY_CHANCE;
+  }
+}
+
 /* ───────── TOKEN HELPERS ───────── */
 
 /** Rough token estimate: ~3.5 chars per token */
@@ -917,14 +950,11 @@ client.on(Events.MessageCreate, async (message) => {
       const threshold = topicWarm ? 0.90 : 0.70;
       if (Math.random() > threshold) return;
     } else {
-      const threshold = topicWarm ? 0.90 : REPLY_CHANCE;
-      if (Math.random() > threshold) return;
+      const history = getHistory(message.channelId);
+      const join = await shouldLunaJoin(history, content, topicWarm);
+      if (!join) return;
     }
   }
-
-  // Random ignore — silently skip even when Luna would normally reply
-  const ignoreChance = addressTag === "MENTION" ? 0.10 : 0.25;
-  if (!isDM && !isBot && addressTag !== "DIRECT" && Math.random() < ignoreChance) return;
 
   // Reaction-only path — skip full AI reply for ambient, non-bot messages occasionally
   if (!isDM && !isBot && addressTag !== "DIRECT" && Math.random() < QUICK_REACT_CHANCE) {

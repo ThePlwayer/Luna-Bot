@@ -381,19 +381,13 @@ const client = new Client({
 client.once(Events.ClientReady, async (readyClient) => {
   loadHistory();
   loadUserNotes();
+  loadUserProfiles();
   loadAllowedChannels();
   console.log(`✅ Logged in as ${readyClient.user.tag}`);
   console.log(`📋 Serving ${readyClient.guilds.cache.size} server(s)`);
   console.log(`🤖 Prefix: ${PREFIX}`);
   console.log(`🧠 AI: Groq (${GROQ_MODEL})`);
   
-  client.once(Events.ClientReady, async (readyClient) => {
-  loadHistory();
-  loadUserNotes();
-  loadUserProfiles(); // ✅ Load trust counters on boot
-  loadAllowedChannels();
-  // ...
-
   let totalCached = 0;
   for (const guild of readyClient.guilds.cache.values()) {
     try {

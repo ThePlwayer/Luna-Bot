@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 const HISTORY_FILE  = path.join(__dirname, "../data/history.json");
 const NOTES_FILE    = path.join(__dirname, "../data/user_notes.json");
 const CHANNELS_FILE = path.join(__dirname, "../data/allowed_channels.json");
+const PROFILES_FILE = path.join(__dirname, "../data/user_profiles.json");
 
 /* ───────── SHARED STATE ───────── */
 
@@ -164,6 +165,37 @@ export function getUserNotes(userId) {
 export function setUserNotes(userId, notes) {
   userNotes.set(userId, notes);
   scheduleNotesSave();
+}
+
+/* ───────── USER PROFILES PERSISTENCE ───────── */
+
+export function loadUserProfiles() {
+  try {
+    if (!fs.existsSync(PROFILES_FILE)) return;
+    const data = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf8"));
+    for (const [userId, profile] of Object.entries(data)) {
+      userProfiles.set(userId, profile);
+    }
+    console.log(`[profiles] Loaded ${Object.keys(data).length} user profile(s)`);
+  } catch (err) {
+    console.warn("[profiles] Failed to load profiles:", err.message);
+  }
+}
+
+let _profilesSaveTimer = null;
+export function saveUserProfiles() {
+  if (_profilesSaveTimer) return;
+  _profilesSaveTimer = setTimeout(() => {
+    _profilesSaveTimer = null;
+    try {
+      const obj = {};
+      for (const [userId, profile] of userProfiles) obj[userId] = profile;
+      fs.mkdirSync(path.dirname(PROFILES_FILE), { recursive: true });
+      fs.writeFileSync(PROFILES_FILE, JSON.stringify(obj, null, 2), "utf8");
+    } catch (err) {
+      console.warn("[profiles] Failed to save profiles:", err.message);
+    }
+  }, 2000);
 }
 
 /* ───────── ALLOWED CHANNELS PERSISTENCE ───────── */
@@ -365,8 +397,10 @@ export function getUserProfile(user) {
       username: user.username,
       displayName: user.displayName ?? user.username,
       messages: 0,
+      trust: "shy",
     });
   }
+  
   const profile = userProfiles.get(user.id);
   profile.username = user.username;
   profile.displayName = user.displayName ?? user.username;

@@ -134,11 +134,12 @@ async function shouldLunaJoin(history, newMessage, topicWarm) {
           content:
             "You decide if Luna (a cat girl Discord bot) should join a conversation. " +
             "Reply ONLY with YES or NO.\n" +
-            "Join if: topic is fun/emotional/interesting, someone seems sad or excited, " +
-            "there's a question no one answered, or the vibe is welcoming.\n" +
-            "Don't join if: two people are having a private moment, conversation is boring/mundane, " +
-            "Luna already replied recently and dominates, or it's just spam.\n" +
-            "Be selective — Luna should feel like a real user who joins when it feels natural.",
+            "ALWAYS join if: only one person is talking (1-on-1 with Luna), message contains 'you' referring to Luna, " +
+            "message is a follow-up to what Luna just said, message has a question mark, " +
+            "topic is fun/emotional/interesting, or someone seems sad or excited.\n" +
+            "Don't join if: two OTHER people are having a private conversation not involving Luna, " +
+            "message is pure spam or gibberish, or Luna has already sent 3+ consecutive messages with no user reply.\n" +
+            "When in doubt — JOIN. Luna is sociable and present.",
         },
         {
           role: "user",

@@ -61,6 +61,8 @@ import {
   getCachedPfpVision,
   setCachedPfpVision,
   describeTimeGap,
+  loadUserProfiles,
+  saveUserProfiles,
 } from "./bot/luna.js";
 
 /* ───────── ENV CHECK ───────── */
@@ -384,6 +386,13 @@ client.once(Events.ClientReady, async (readyClient) => {
   console.log(`📋 Serving ${readyClient.guilds.cache.size} server(s)`);
   console.log(`🤖 Prefix: ${PREFIX}`);
   console.log(`🧠 AI: Groq (${GROQ_MODEL})`);
+  
+  client.once(Events.ClientReady, async (readyClient) => {
+  loadHistory();
+  loadUserNotes();
+  loadUserProfiles(); // ✅ Load trust counters on boot
+  loadAllowedChannels();
+  // ...
 
   let totalCached = 0;
   for (const guild of readyClient.guilds.cache.values()) {
@@ -859,6 +868,9 @@ client.on(Events.MessageCreate, async (message) => {
 
     const profile = getUserProfile(message.author);
     profile.messages++;
+    profile.trust = getTrustLevel(profile);
+    saveUserProfiles(); // ✅ Persist trust counter
+    
     const emotion = detectEmotion(message.content);
     if (emotion === "funny")  setLunaMood("playful");
     if (emotion === "sad")    setLunaMood("caring");
